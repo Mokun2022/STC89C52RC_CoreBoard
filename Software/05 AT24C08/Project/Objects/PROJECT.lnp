@@ -1,0 +1,13 @@
+".\Objects\STARTUP.obj",
+".\Objects\stc_it.obj",
+".\Objects\main.obj",
+".\Objects\delay.obj",
+".\Objects\led.obj",
+".\Objects\key.obj",
+".\Objects\timer.obj",
+".\Objects\uart.obj",
+".\Objects\at24cxx.obj",
+".\Objects\at24cxx_i2c.obj" 
+TO ".\Objects\PROJECT" 
+PRINT(".\Listings\PROJECT.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

@@ -1,0 +1,8 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\delay.obj",
+".\Objects\led.obj",
+".\Objects\key.obj" 
+TO ".\Objects\PROJECT" 
+PRINT(".\Listings\PROJECT.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

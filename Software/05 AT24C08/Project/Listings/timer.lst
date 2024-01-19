@@ -1,0 +1,63 @@
+C51 COMPILER V9.60.7.0   TIMER                                                             01/19/2024 19:49:10 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER
+OBJECT MODULE PLACED IN .\Objects\timer.obj
+COMPILER INVOKED BY: D:\SoftWare\Keil_v5\C51\BIN\C51.EXE ..\Bsp\timer\timer.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Bsp\del
+                    -ay;..\Bsp\led;..\Bsp\key;..\Bsp\timer;..\Bsp\uart;..\Bsp\at24cxx) DEBUG OBJECTEXTEND PRINT(.\Listings\timer.lst) OBJECT(
+                    -.\Objects\timer.obj)
+
+line level    source
+
+   1          #include "timer.h"
+   2          
+   3          /*******************************************************************
+   4          *                                       preset最大值为65535 
+   5          *
+   6          *       11.0592Mhz    1s 计数 921600 次 =>  1ms -> 921.6次 
+   7          *           12.0000Mhz    1s 计数 1000000次 =>  1ms -> 1000 次
+   8          *                                               
+   9          *********************************************************************/
+  10          
+  11          void timer0_init(int preset)
+  12          {
+  13   1              //设置定时器0模式
+  14   1              TMOD &=~(0XF<<0);       //清零
+  15   1              TMOD |= (0X1<<0);       //TMOD为方式1
+  16   1              TL0 =(65535-preset) % 256;
+  17   1              TH0 =(65535-preset) / 256;
+  18   1      
+  19   1              TF0 = 0;                //清除TF0标志
+  20   1              EA=1;
+  21   1              ET0=1;
+  22   1              TR0 =1;                 //定时器0启动
+  23   1      }
+  24          
+  25          void timer1_init(int preset)
+  26          {
+  27   1              //设置定时器1模式
+  28   1              TMOD &=~(0XF<<4);       //清零
+  29   1              TMOD |= (0X1<<4);       //TMOD为方式1
+  30   1              TL1 =(65535-preset)%256;
+  31   1              TH1 =(65535-preset)/256;
+  32   1              
+  33   1              TF1 = 0;                //清除TF0标志
+  34   1              EA=1;
+  35   1              ET1=1;
+  36   1              TR1 =1;                 //定时器1启动
+  37   1      }
+  38          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    202    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,144 @@
+C51 COMPILER V9.60.7.0   AT24CXX_I2C                                                       01/19/2024 19:49:10 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE AT24CXX_I2C
+OBJECT MODULE PLACED IN .\Objects\at24cxx_i2c.obj
+COMPILER INVOKED BY: D:\SoftWare\Keil_v5\C51\BIN\C51.EXE ..\Bsp\at24cxx\at24cxx_i2c.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..
+                    -\Bsp\delay;..\Bsp\led;..\Bsp\key;..\Bsp\timer;..\Bsp\uart;..\Bsp\at24cxx) DEBUG OBJECTEXTEND PRINT(.\Listings\at24cxx_i2
+                    -c.lst) OBJECT(.\Objects\at24cxx_i2c.obj)
+
+line level    source
+
+   1          #include "at24cxx_i2c.h"
+   2          #include "uart.h"
+   3          
+   4          
+   5          void AT24CXX_Delay5us(void)     //@12.000MHz
+   6          {
+   7   1              unsigned char data i;
+   8   1      
+   9   1              _nop_();
+  10   1              i = 2;
+  11   1              while (--i);
+  12   1      }
+  13          
+  14          
+  15          
+  16          void AT24CXX_IIC_Start(void)
+  17          {
+  18   1              AT24CXX_SDA_PIN = 1;
+  19   1              AT24CXX_SCL_PIN = 1;
+  20   1              AT24CXX_Delay5us();
+  21   1              
+  22   1              AT24CXX_SDA_PIN = 0;
+  23   1              AT24CXX_Delay5us();
+  24   1              
+  25   1              AT24CXX_SCL_PIN = 0;
+  26   1              AT24CXX_Delay5us();
+  27   1      }
+  28          
+  29          void AT24CXX_IIC_Stop(void)
+  30          {
+  31   1              AT24CXX_SDA_PIN = 0;     
+  32   1              AT24CXX_Delay5us();
+  33   1      
+  34   1              AT24CXX_SCL_PIN = 1;
+  35   1              AT24CXX_Delay5us();
+  36   1              
+  37   1              AT24CXX_SDA_PIN = 1;
+  38   1              AT24CXX_Delay5us();
+  39   1      }
+  40          
+  41          
+  42          void AT24CXX_IIC_WriteByte(unsigned char Byte)
+  43          {
+  44   1              unsigned char i;
+  45   1              for(i=0;i<8;i++)
+  46   1              {
+  47   2                      AT24CXX_SDA_PIN = Byte&(0x80>>i);               //Byte的最高位输入
+  48   2                      AT24CXX_SCL_PIN = 1;
+  49   2                      AT24CXX_Delay5us();
+  50   2              AT24CXX_SCL_PIN = 0;
+  51   2                      AT24CXX_Delay5us();                                     //下降沿写入
+  52   2              }
+  53   1      }
+C51 COMPILER V9.60.7.0   AT24CXX_I2C                                                       01/19/2024 19:49:10 PAGE 2   
+
+  54          
+  55          unsigned char AT24CXX_IIC_ReadByte(void)
+  56          {
+  57   1              unsigned char i,Byte=0x00;
+  58   1              AT24CXX_SDA_PIN = 1;                                    //在读取数据之前，要把SDA拉高，释放总线
+  59   1              AT24CXX_Delay5us();
+  60   1              for(i=0;i<8;i++)
+  61   1              {
+  62   2                      AT24CXX_SCL_PIN = 1;
+  63   2                      AT24CXX_Delay5us();
+  64   2                      if(AT24CXX_SDA_PIN)                             
+  65   2                              Byte|=(0x80>>i);                        //先读取高位
+  66   2                      AT24CXX_Delay5us();
+  67   2                      AT24CXX_SCL_PIN= 0;
+  68   2                      AT24CXX_Delay5us();
+  69   2              }
+  70   1              
+  71   1              return Byte;
+  72   1      }
+  73          
+  74          //I2C主机发送应答  0:应答  1：非应答
+  75          void AT24CXX_IIC_ACK(unsigned char ACK)
+  76          {
+  77   1              AT24CXX_SDA_PIN = ACK;
+  78   1              AT24CXX_Delay5us();
+  79   1          AT24CXX_SCL_PIN = 1;
+  80   1              AT24CXX_Delay5us();
+  81   1          AT24CXX_SCL_PIN = 0;
+  82   1              AT24CXX_Delay5us();
+  83   1      }
+  84          
+  85          
+  86          //I2C从机接收应答               0:应答  1：非应答
+  87          
+  88          unsigned char AT24CXX_IIC_Wait_ACK(void)
+  89          {
+  90   1              unsigned char ACK;
+  91   1              
+  92   1              AT24CXX_SDA_PIN = 1;                    // 释放总线
+  93   1              AT24CXX_Delay5us();
+  94   1              
+  95   1              AT24CXX_SCL_PIN = 1;
+  96   1              AT24CXX_Delay5us();
+  97   1              ACK = AT24CXX_SDA_PIN;
+  98   1              AT24CXX_SCL_PIN = 0;
+  99   1              AT24CXX_Delay5us();
+ 100   1              
+ 101   1              return ACK;
+ 102   1      }
+ 103          
+ 104          
+ 105          
+ 106          
+ 107          void AT24CXX_IIC_Init(void)
+ 108          {
+ 109   1              AT24CXX_SCL_PIN = 1;
+ 110   1          AT24CXX_SDA_PIN = 1;
+ 111   1      }
+ 112          
+ 113          
+ 114          
+ 115          
+C51 COMPILER V9.60.7.0   AT24CXX_I2C                                                       01/19/2024 19:49:10 PAGE 3   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    164    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

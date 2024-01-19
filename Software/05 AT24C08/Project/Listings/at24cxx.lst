@@ -1,0 +1,183 @@
+C51 COMPILER V9.60.7.0   AT24CXX                                                           01/19/2024 19:49:10 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE AT24CXX
+OBJECT MODULE PLACED IN .\Objects\at24cxx.obj
+COMPILER INVOKED BY: D:\SoftWare\Keil_v5\C51\BIN\C51.EXE ..\Bsp\at24cxx\at24cxx.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Bsp
+                    -\delay;..\Bsp\led;..\Bsp\key;..\Bsp\timer;..\Bsp\uart;..\Bsp\at24cxx) DEBUG OBJECTEXTEND PRINT(.\Listings\at24cxx.lst) O
+                    -BJECT(.\Objects\at24cxx.obj)
+
+line level    source
+
+   1          #include "at24cxx.h"
+   2          #include "at24cxx_i2c.h"
+   3          #include "delay.h"
+   4          #include "uart.h"
+   5          
+   6          /*
+   7                  AT24C08A，8K串行EEPROM：
+   8                  内部组织为64页，每页16字节，
+   9                  10位的数据字地址来进行随机字寻址。
+  10          */
+  11          
+  12          
+  13          
+  14          /**
+  15            * @brief  IIC初始化.
+  16            * @param  void.
+  17            * @retval void.
+  18          */
+  19          void x24cxx_Init(void)
+  20          {
+  21   1              AT24CXX_IIC_Init();
+  22   1      }
+  23          
+  24          
+  25          /**
+  26            * @brief  写一个字节.
+  27            * @param  u16Addr 要写入的10位地址.
+  28            * @param  u8Data  要写入的8位数据.
+  29            * @retval void.
+  30          */
+  31          void x24Cxx_WriteByte(unsigned int u16Addr, unsigned char u8Data)
+  32          {
+  33   1              AT24CXX_IIC_Start();//起始信号
+  34   1              AT24CXX_IIC_WriteByte(DEV_ADDR | WRITE_CMD | (((unsigned char)((u16Addr >> 8) & 0x03)) << 1));//器件寻址+
+             -写+页选择位
+  35   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  36   1              AT24CXX_IIC_WriteByte((unsigned char)(u16Addr & 0xFF));//只取地址的低字节，高字节如果有，已经按照页选择位
+             -处理过了
+  37   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  38   1              AT24CXX_IIC_WriteByte(u8Data);
+  39   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  40   1              AT24CXX_IIC_Stop();//停止信号
+  41   1      }
+  42          
+  43          /**
+  44            * @brief  页写,最多写入1页，防止翻卷，如果地址跨页则去掉跨页的部分.
+  45            * @param  u16Addr 要写入的10位地址.
+  46            * @param  u8Len   写入数据字节数，最大为PAGE_SIZE.
+  47            * @param  pData   要写入的数据首地址.
+  48            * @retval void.
+  49          */
+  50          void x24Cxx_WritePage(unsigned int u16Addr, unsigned char u8Len, unsigned char *pData)
+  51          {
+C51 COMPILER V9.60.7.0   AT24CXX                                                           01/19/2024 19:49:10 PAGE 2   
+
+  52   1              unsigned char i;
+  53   1              
+  54   1              AT24CXX_IIC_Start();//起始信号
+  55   1              AT24CXX_IIC_WriteByte(DEV_ADDR | WRITE_CMD | (((unsigned char)((u16Addr >> 8) & 0x03)) << 1));//器件寻址+
+             -写+页选择位
+  56   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  57   1              AT24CXX_IIC_WriteByte((unsigned char)(u16Addr & 0xFF));//只取地址的低字节，高字节如果有，已经按照页选择位
+             -处理过了
+  58   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  59   1              if (u8Len > PAGE_SIZE)//长度大于页的长度
+  60   1              {
+  61   2                      u8Len = PAGE_SIZE;
+  62   2              }
+  63   1              if ((u16Addr + (unsigned int)u8Len) > CAPACITY_SIZE)//超过容量
+  64   1              {
+  65   2                      u8Len = (unsigned char)(CAPACITY_SIZE - u16Addr);
+  66   2              }
+  67   1              if (((u16Addr % PAGE_SIZE) + (unsigned int)u8Len) > PAGE_SIZE)//判断是否跨页
+  68   1              {
+  69   2                      u8Len -= (unsigned char)((u16Addr + (unsigned int)u8Len) % PAGE_SIZE);//跨页，截掉跨页的部分
+  70   2              }
+  71   1              
+  72   1              for (i = 0; i < u8Len; i++)
+  73   1              {
+  74   2                      AT24CXX_IIC_WriteByte(*(pData + i));
+  75   2                      AT24CXX_IIC_Wait_ACK();//等待应答
+  76   2              }
+  77   1              AT24CXX_IIC_Stop();//停止信号   
+  78   1      }
+  79          
+  80          
+  81          /**
+  82            * @brief  读一个字节.
+  83            * @param  u16Addr  要读取的10位地址.
+  84            * @retval u8Data   读出的8位数据.
+  85          */
+  86          unsigned char x24Cxx_ReadByte(unsigned int u16Addr)
+  87          {
+  88   1              unsigned char u8Data = 0;
+  89   1              
+  90   1              AT24CXX_IIC_Start();//起始信号  
+  91   1              AT24CXX_IIC_WriteByte(DEV_ADDR | WRITE_CMD | (((unsigned char)((u16Addr >> 8) & 0x03)) << 1));//器件寻址+
+             -写+页选择位
+  92   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  93   1              AT24CXX_IIC_WriteByte((unsigned char)(u16Addr & 0xFF));//只取地址的低字节，高字节如果有，已经按照页选择位
+             -处理过了
+  94   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  95   1              AT24CXX_IIC_Start();//起始信号
+  96   1              AT24CXX_IIC_WriteByte(DEV_ADDR | READ_CMD);//器件寻址+读
+  97   1              AT24CXX_IIC_Wait_ACK();//等待应答
+  98   1              u8Data = AT24CXX_IIC_ReadByte();
+  99   1              AT24CXX_IIC_ACK(1);
+ 100   1              AT24CXX_IIC_Stop();//停止信号
+ 101   1              return u8Data;
+ 102   1      }
+ 103          
+ 104          
+ 105          
+ 106          /**
+ 107            * @brief  页读,最多读1页，防止翻卷，如果地址跨页则去掉跨页的部分
+ 108            * @param  u16Addr 要读取的10位地址.
+ 109            * @param  u8Len   读取数据字节数，最大为PAGE_SIZE.
+C51 COMPILER V9.60.7.0   AT24CXX                                                           01/19/2024 19:49:10 PAGE 3   
+
+ 110            * @param  pData   读取数据存入的缓存.
+ 111            * @retval void.
+ 112          */
+ 113          void x24Cxx_ReadPage(unsigned int u16Addr, unsigned char u8Len, unsigned char *pBuff)
+ 114          {
+ 115   1              unsigned char i;        
+ 116   1              
+ 117   1              AT24CXX_IIC_Start();//起始信号  
+ 118   1              AT24CXX_IIC_WriteByte(DEV_ADDR | WRITE_CMD | (((unsigned char)((u16Addr >> 8) & 0x03)) << 1));//器件寻址+
+             -写+页选择位
+ 119   1              AT24CXX_IIC_Wait_ACK();//等待应答
+ 120   1              AT24CXX_IIC_WriteByte((unsigned char)(u16Addr & 0xFF));//只取地址的低字节，高字节如果有，已经按照页选择位
+             -处理过了
+ 121   1              AT24CXX_IIC_Wait_ACK();//等待应答
+ 122   1              AT24CXX_IIC_Start();//起始信号
+ 123   1              AT24CXX_IIC_WriteByte(DEV_ADDR | READ_CMD);//器件寻址+读
+ 124   1              AT24CXX_IIC_Wait_ACK();//等待应答
+ 125   1              if (u8Len > PAGE_SIZE)//长度大于页的长度
+ 126   1              {
+ 127   2                      u8Len = PAGE_SIZE;
+ 128   2              }
+ 129   1              if ((u16Addr + (unsigned int)u8Len) > CAPACITY_SIZE)//超过容量
+ 130   1              {
+ 131   2                      u8Len = (unsigned char)(CAPACITY_SIZE - u16Addr);
+ 132   2              }
+ 133   1              if (((u16Addr % PAGE_SIZE) + (unsigned int)u8Len) > PAGE_SIZE)//判断是否跨页
+ 134   1              {
+ 135   2                      u8Len -= (unsigned char)((u16Addr + (unsigned int)u8Len) % PAGE_SIZE);//跨页，截掉跨页的部分
+ 136   2              }
+ 137   1              for (i = 0; i < (u8Len - 1); i++)
+ 138   1              {
+ 139   2                      *(pBuff + i) = AT24CXX_IIC_ReadByte();
+ 140   2                      AT24CXX_IIC_ACK(0);//主机应答
+ 141   2              }
+ 142   1              *(pBuff + u8Len - 1) = AT24CXX_IIC_ReadByte();
+ 143   1              AT24CXX_IIC_ACK(1);//最后一个不应答
+ 144   1              AT24CXX_IIC_Stop();//停止信号
+ 145   1      }
+ 146          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    456    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      20
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
